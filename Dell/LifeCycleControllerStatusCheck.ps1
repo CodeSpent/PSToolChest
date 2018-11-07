@@ -1,4 +1,37 @@
-﻿clear
+﻿<#
+
+.SYNOPSIS
+This script requires the DellPEWSManTools (https://github.com/dell/DellPEWSMANTools).
+This will take the file located in D:\Scripts\iDRACUpgrade2018\iDRACs.txt (modify in the script) and scan every IP address for the
+LifeCycle Controller status. This is because if an iDRAC's LifeCycle Controller is not in the "Enabled" state, you cannot upgrade the firmware.
+
+
+.DESCRIPTION
+This will take the file located in D:\Scripts\iDRACUpgrade2018\iDRACs.txt (modify in the script) and scan every IP address for the
+LifeCycle Controller status. This is because if an iDRAC's LifeCycle Controller is not in the "Enabled" state, you cannot upgrade the firmware.
+
+
+.EXAMPLE
+Example Output is:
+"IP Address","Attribute Name","Current Value"
+"192.168.0.49","Lifecycle Controller State","Recovery"
+"192.168.289.149","Offline","Offline"
+"192.168.1.49","Lifecycle Controller State","Recovery"
+"192.168.2.149","Lifecycle Controller State","Enabled"
+"192.168.3.49","No LifeCycleController Found","No LifeCycleController Found."
+"192.168.4.49","Lifecycle Controller State","Enabled"
+
+Which can obviously be opened in Excel, which makes it much easier to view, sort, and pawn off on someone else to enable the LifeCycleControllers :)
+
+.NOTES
+Depending on your connection speed and number of servers, this may take a while. Start it, watch the first few succeed, and go grab a coffee, go for a walk, or take a nap.
+This takes about 3 seconds per server for me.
+
+.LINK
+https://github.com/joshbgosh10592/PSToolChest
+
+#>
+clear
 Import-Module DellPEWSManTools
 $script:SourcePath = "D:\Scripts\iDRACUpgrade2018"
 $script:SourceFile = "iDRACs.txt"
