@@ -1,2 +1,0 @@
-# PSToolChest
-PowerShell ToolChest
