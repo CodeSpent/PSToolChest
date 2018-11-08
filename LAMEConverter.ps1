@@ -1,6 +1,5 @@
 ﻿#LAME audio converter that converts basically any audio to MP3 format.
 #More info on LAME commands can be found here: http://ecmc.rochester.edu/ecmc/docs/lame/switchs.html
-
 $WorkingDir = "S:\Upload\Services"
 $InputPath = "$WorkingDir\Input"
 $OutputPath = "$WorkingDir\Output"
