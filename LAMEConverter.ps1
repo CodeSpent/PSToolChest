@@ -26,6 +26,7 @@ Function WavToMP3Convert
         $OutputFile = $InputFile.split('\.')[-2]
             & $LAMEexe $InputFile $OutputPath\$OutputFile.mp3 -b $BitRate
         LogWrite $LogFile $CurrentDate $InputFile $OutputFile
+        Remove-Item $InputFile
     }
 }
 Function LogWrite
