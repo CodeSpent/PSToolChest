@@ -4,7 +4,7 @@ $WorkingDir = "S:\Upload\Services"
 $InputPath = "$WorkingDir\Input"
 $OutputPath = "$WorkingDir\Output"
 $LAMEexe = "C:\Program Files (Personal)\lame3.100-64\lame.exe"
-$LogFile = "$OutputPath\wavToMP3.log"
+$LogFile = "$OutputPath\wavToMP3log.txt"
 $InputFiles = Get-ChildItem -Path $InputPath -Recurse -Include *.wav | select -expand fullname
 $BitRate = "96"
 Function WavToMP3Convert
