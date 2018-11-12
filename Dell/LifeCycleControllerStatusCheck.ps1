@@ -61,6 +61,7 @@ Function Check-LifeCycle ($Creds, $iDRAC, $iDRACs, $ResultsPath, $ResultsFile)
         If (Test-Connection -ComputerName $script:iDRAC -Quiet -Count 1)
             {
             CreateNewiDRACSession $iDRAC $Creds $ResultsPath $ResultsFile
+            ####Need to make "CreatNewiDRACSession" not print twice."
             $script:RawProps = Get-PELCAttribute -iDRACSession $script:iDRACSession | Where-Object {$_.AttributeName -match "Lifecycle Controller State"}
                 If (!$RawProps)
                     {

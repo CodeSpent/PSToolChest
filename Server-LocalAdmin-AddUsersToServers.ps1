@@ -100,3 +100,8 @@ Function AddLAServers
 }
 #################Do Stuff#################
 Menu $SourcePath $SourceFile $SourceResultsFile $Domain
+############TODO###########
+<#
+Add catch for Access denied to return "Did you move it to the correct OU?"
+Figure out why this script returns an error, even though it actually completes thet
+#>
