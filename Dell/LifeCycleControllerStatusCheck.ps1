@@ -52,6 +52,16 @@ Function CredentialDefine
         exit
         }
     }
+Function WritePropsToCSV
+    {
+        $Props = [ordered]@{
+            "IP Address" = $iDRAC;
+            "Attribute Name" = "$AttributeName";
+            "Current Value" = "$CurrentValue"
+            }#end props
+        $PropsObject = New-Object -TypeName PSObject -Property $Props
+        $PropsObject| Export-CSV -NoTypeInformation $ResultsPath\$ResultsFile -Append
+    }
 Function Check-LifeCycle
     {
     Param (
@@ -65,8 +75,8 @@ Function Check-LifeCycle
     Foreach ($iDRAC in $iDRACs)
         {
         Write-Host "Check-LifeCycle Function Foreach Block running" -ForegroundColor Yellow
-        Write-Host "iDRACs"
-        Write-Host "$iDRAC"
+        Write-Host "Pre-TestConnection iDRACs: $iDRACs"
+        Write-Host "Pre-TestConnection iDRAC: $iDRAC"
         If (Test-Connection -ComputerName $iDRAC -Quiet -Count 1)
             {
             Write-Host "test-Connection succeeded" -ForegroundColor Yellow
@@ -75,35 +85,23 @@ Function Check-LifeCycle
             $RawProps = Get-PELCAttribute -iDRACSession $iDRACSession | Where-Object {$_.AttributeName -match "Lifecycle Controller State"}
                 If (!$RawProps)
                     {
-                    $Props = [ordered]@{
-                            "IP Address" = $iDRAC;
-                            "Attribute Name" = "No LifeCycleController Found";
-                            "Current Value" = "No LifeCycleController Found."
-                        }#end props
-                    $PropsObject = New-Object -TypeName PSObject -Property $Props
-                    $PropsObject| Export-CSV -NoTypeInformation $ResultsPath\$ResultsFile -Append
+                        $AttributeName = "No LifeCycleController Found."
+                        $CurrentValue = "No LifeCycleController Found."
+                        WritePropsToCSV -AttributeName $AttributeName -CurrentValue $CurrentValue
                     }
                 Else
                     {
-                    $Props = [ordered]@{
-                        "IP Address" = $RawProps.PSComputerName;
-                        "Attribute Name" = $RawProps.AttributeName;
-                        "Current Value" = $RawProps.CurrentValue
-                        }#end props
-                    $PropsObject = New-Object -TypeName PSObject -Property $Props
-                    $PropsObject| Export-CSV -NoTypeInformation $ResultsPath\$ResultsFile -Append
+                        $AttributeName = $RawProps.AttributeName
+                        $CurrentValue = $RawProps.CurrentValue
+                        WritePropsToCSV -AttributeName $AttributeName -CurrentValue $CurrentValue
                 }
             }
         Else
             {
             Write-Host "Check-LifeCycle Function foreach, ELSE block running" -ForegroundColor Yellow
-            $Props = [ordered]@{
-                "IP Address" = $iDRAC;
-                "Attribute Name" = "Offline";
-                "Current Value" = "Offline"
-                }#end props
-            $PropsObject = New-Object -TypeName PSObject -Property $Props
-            $PropsObject| Export-CSV -NoTypeInformation $ResultsPath\$ResultsFile -Append
+                $AttributeName = "Offline."
+                $CurrentValue = "Offline."
+                WritePropsToCSV -AttributeName $AttributeName -CurrentValue $CurrentValue
             }
         }
     }
@@ -123,13 +121,10 @@ Function CreateNewiDRACSession
     Catch
         {
         Write-Host "CreateNewiDRACSession Catch block running" -ForegroundColor Yellow
-        $Props = [ordered]@{
-            "IP Address" = $iDRAC;
-            "Attribute Name" = "$_.Exception.Message";
-            "Current Value" = "Can't Create iDRAC Session. Check Password."
-            }#end props
-        $PropsObject = New-Object -TypeName PSObject -Property $Props
-        $PropsObject| Export-CSV -NoTypeInformation $ResultsPath\$ResultsFile -Append
+        Write-Host "Check-LifeCycle Function foreach, ELSE block running" -ForegroundColor Yellow
+        $AttributeName = "$_.Exception.Message"
+        $CurrentValue = "Offline."
+        WritePropsToCSV -AttributeName $AttributeName -CurrentValue $CurrentValue
         }
     }
 Function DoGetList
@@ -160,4 +155,4 @@ $Confirm = Read-Host "$message"
 CredentialDefine
 DoGetList $SourcePath $SourceFile
 Write-Host "-Creds $Creds -iDRACs $iDRACs -ResultsPath $ResultsPath -ResultsFile $ResultsFile "
-Check-LifeCycle -Creds $Creds -iDRACs $iDRACs -ResultsPath $ResultsPath -ResultsFile $ResultsFile
+Check-LifeCycle "$Creds" "$iDRACs" "$ResultsPath" "$ResultsFile"
