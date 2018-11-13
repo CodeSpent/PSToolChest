@@ -40,7 +40,7 @@ $message = "This script will read from $SourcePath\$SourceFile exactly. `n Press
 #############Conjunction Juncion, what's your Function#############
 Function CredentialDefine
     {
-    Write-Host "CredentialDefint Function running"
+    Write-Host "CredentialDefine Function running"
     Try
         {
         Write-Host "Check-LifeCycle Function Try Block running" -Foregroundcolor Yellow
