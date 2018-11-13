@@ -159,4 +159,5 @@ $ResultsFile = "iDRAC-LifeCycleResults_$CurrentDate.csv"
 $Confirm = Read-Host "$message"
 CredentialDefine
 DoGetList $SourcePath $SourceFile
-Check-LifeCycle
+Write-Host "-Creds $Creds -iDRACs $iDRACs -ResultsPath $ResultsPath -ResultsFile $ResultsFile "
+Check-LifeCycle -Creds $Creds -iDRACs $iDRACs -ResultsPath $ResultsPath -ResultsFile $ResultsFile
