@@ -40,11 +40,11 @@ $message = "This script will read from $SourcePath\$SourceFile exactly. `n Press
 #############Conjunction Juncion, what's your Function#############
 Function CredentialDefine
     {
-    Write-Host "CredentialDefine Function running"
+    Write-Host "CredentialDefine Function running" -ForegroundColor Yellow
     Try
         {
         Write-Host "Check-LifeCycle Function Try Block running" -Foregroundcolor Yellow
-         $script:Creds = Get-Credential -Message "Please enter credentials for the iDRAC"
+         $Creds = Get-Credential -Message "Please enter credentials for the iDRAC"
         }
     catch
         {
@@ -52,12 +52,20 @@ Function CredentialDefine
         exit
         }
     }
-Function Check-LifeCycle ($Creds, $iDRAC, $iDRACs, $ResultsPath, $ResultsFile)
+Function Check-LifeCycle
     {
-    Write-Host "Check-LifeCycle Function has started"
+    Param (
+    $Creds,
+    $iDRACs,
+    $ResultsPath,
+    $ResultsFile
+    )
+    Write-Host "Check-LifeCycle Function has started" -ForegroundColor Yellow
+    Write-Host "iDRACs Var is "$iDRACs" - iDRAC Var is "$iDRAC"" -Foreground Yellow
     Foreach ($iDRAC in $iDRACs)
         {
         Write-Host "Check-LifeCycle Function Foreach Block running" -ForegroundColor Yellow
+        Write-Host "iDRACs"
         Write-Host "$iDRAC"
         If (Test-Connection -ComputerName $iDRAC -Quiet -Count 1)
             {
@@ -101,7 +109,11 @@ Function Check-LifeCycle ($Creds, $iDRAC, $iDRACs, $ResultsPath, $ResultsFile)
     }
 Function CreateNewiDRACSession
     {
-    Param ($iDRAC, $iDRACSession, $Creds)
+    Param (
+    $iDRAC, 
+    $iDRACSession, 
+    $Creds
+    )
     Try
         {
         Write-Host "CreateNewiDRACSession running" -ForegroundColor 
@@ -122,10 +134,11 @@ Function CreateNewiDRACSession
     }
 Function DoGetList
     {
-    Param ($iDRACs, $SourcePath, $SourceFile)
+    Param ($SourcePath, $SourceFile)
     Try
         {
         $iDRACs = Get-Content "$SourcePath\$SourceFile" -ErrorAction Stop;
+        Write-host "$iDRACs"
         }
     catch
         {
@@ -145,5 +158,5 @@ BuildDates
 $ResultsFile = "iDRAC-LifeCycleResults_$CurrentDate.csv"
 $Confirm = Read-Host "$message"
 CredentialDefine
-DoGetList $iDRACs $SourcePath $SourceFile
-Check-LifeCycle $Creds $iDRAC $iDRACs $ResultsPath $ResultsFile $CurrentDate
+DoGetList $SourcePath $SourceFile
+Check-LifeCycle
