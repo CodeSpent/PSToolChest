@@ -37,21 +37,12 @@ $SourcePath = "D:\Scripts\iDRACUpgrade2018"
 $SourceFile = "iDRACs.txt"
 $ResultsPath = "$SourcePath\Results"
 $message = "This script will read from $SourcePath\$SourceFile exactly. `n Press enter once this is correct. `n Use iDRAC Credentials on Cred prompt!"
+#Get the Dates into a format that'll be used for the results page
+$CurrentDate = Get-Date
+$CurrentDate = $CurrentDate.ToString('MM-dd-yyyy_hh-mm-ss')
+$ResultsFile = "iDRAC-LifeCycleResults_$CurrentDate.csv"
+
 #############Conjunction Juncion, what's your Function#############
-Function CredentialDefine
-    {
-    Write-Host "CredentialDefine Function running" -ForegroundColor Yellow
-    Try
-        {
-        Write-Host "Check-LifeCycle Function Try Block running" -Foregroundcolor Yellow
-         $Creds = Get-Credential -Message "Please enter credentials for the iDRAC"
-        }
-    catch
-        {
-        Write-Host "You didn't provide Credentials!" -ForegroundColor Yellow
-        exit
-        }
-    }
 Function WritePropsToCSV
     {
         $Props = [ordered]@{
@@ -62,56 +53,9 @@ Function WritePropsToCSV
         $PropsObject = New-Object -TypeName PSObject -Property $Props
         $PropsObject| Export-CSV -NoTypeInformation $ResultsPath\$ResultsFile -Append
     }
-Function Check-LifeCycle
-    {
-    Param (
-    $Creds,
-    $iDRACs,
-    $ResultsPath,
-    $ResultsFile
-    )
-    Write-Host "Check-LifeCycle Function has started" -ForegroundColor Yellow
-    Write-Host "iDRACs Var is "$iDRACs" - iDRAC Var is "$iDRAC"" -Foreground Yellow
-    Foreach ($iDRAC in $iDRACs)
-        {
-        Write-Host "Check-LifeCycle Function Foreach Block running" -ForegroundColor Yellow
-        Write-Host "Pre-TestConnection iDRACs: $iDRACs"
-        Write-Host "Pre-TestConnection iDRAC: $iDRAC"
-        If (Test-Connection -ComputerName $iDRAC -Quiet -Count 1)
-            {
-            Write-Host "test-Connection succeeded" -ForegroundColor Yellow
-            CreateNewiDRACSession $iDRAC $Creds $ResultsPath $ResultsFile
-            ####Need to make "CreatNewiDRACSession" not print twice."
-            $RawProps = Get-PELCAttribute -iDRACSession $iDRACSession | Where-Object {$_.AttributeName -match "Lifecycle Controller State"}
-                If (!$RawProps)
-                    {
-                        $AttributeName = "No LifeCycleController Found."
-                        $CurrentValue = "No LifeCycleController Found."
-                        WritePropsToCSV -AttributeName $AttributeName -CurrentValue $CurrentValue
-                    }
-                Else
-                    {
-                        $AttributeName = $RawProps.AttributeName
-                        $CurrentValue = $RawProps.CurrentValue
-                        WritePropsToCSV -AttributeName $AttributeName -CurrentValue $CurrentValue
-                }
-            }
-        Else
-            {
-            Write-Host "Check-LifeCycle Function foreach, ELSE block running" -ForegroundColor Yellow
-                $AttributeName = "Offline."
-                $CurrentValue = "Offline."
-                WritePropsToCSV -AttributeName $AttributeName -CurrentValue $CurrentValue
-            }
-        }
-    }
+#Likely to be deletedvvvvv
 Function CreateNewiDRACSession
     {
-    Param (
-    $iDRAC, 
-    $iDRACSession, 
-    $Creds
-    )
     Try
         {
         Write-Host "CreateNewiDRACSession running" -ForegroundColor 
@@ -127,9 +71,16 @@ Function CreateNewiDRACSession
         WritePropsToCSV -AttributeName $AttributeName -CurrentValue $CurrentValue
         }
     }
-Function DoGetList
-    {
-    Param ($SourcePath, $SourceFile)
+####################Just Do It####################
+
+#pause ($script:message)
+#Define the further $Vars required.
+#This is done so that the date/timestamp is set to when the loop actually starts, after creds, rather than being inaccurate
+#rather than if the user ends up waiting minutes to enter creds (maybe they forgot them and need to ask?)
+$CurrentDate = Get-Date
+$CurrentDate = $CurrentDate.ToString('MM-dd-yyyy_hh-mm-ss')
+$ResultsFile = "iDRAC-LifeCycleResults_$CurrentDate.csv"
+#Get the list of iDRACs we want to use
     Try
         {
         $iDRACs = Get-Content "$SourcePath\$SourceFile" -ErrorAction Stop;
@@ -140,19 +91,56 @@ Function DoGetList
         Write-Host "$SourcePath\$SourceFile can't be read!" -ForegroundColor Yellow
         exit
         }
-    }
-Function BuildDates
-    {
-        $CurrentDate = Get-Date
-        $CurrentDate = $CurrentDate.ToString('MM-dd-yyyy_hh-mm-ss')
-    }
-####################Just Do It####################
-
-#pause ($script:message)
-BuildDates
-$ResultsFile = "iDRAC-LifeCycleResults_$CurrentDate.csv"
+#Prompt User for OK and to provide info
 $Confirm = Read-Host "$message"
-CredentialDefine
-DoGetList $SourcePath $SourceFile
+#Let's define our credentials for the iDRACs.
+    Write-Host "CredentialDefine running" -ForegroundColor Yellow
+    Try
+        {
+        Write-Host "Check-LifeCycle Function Try Block running" -Foregroundcolor Yellow
+         $Creds = Get-Credential -Message "Please enter credentials for the iDRAC"
+        }
+    catch
+        {
+        Write-Host "You didn't provide Credentials!" -ForegroundColor Yellow
+        exit
+        }
+
+$ResultsFile = "iDRAC-LifeCycleResults_$CurrentDate.csv"
 Write-Host "-Creds $Creds -iDRACs $iDRACs -ResultsPath $ResultsPath -ResultsFile $ResultsFile "
-Check-LifeCycle "$Creds" "$iDRACs" "$ResultsPath" "$ResultsFile"
+
+#####The code block that actually does the loop.
+Write-Host "Check-LifeCycle Function has started" -ForegroundColor Yellow
+Write-Host "iDRACs Var is "$iDRACs" - iDRAC Var is "$iDRAC"" -Foreground Yellow
+Foreach ($iDRAC in $iDRACs)
+    {
+    Write-Host "Check-LifeCycle Function Foreach Block running" -ForegroundColor Yellow
+    Write-Host "Pre-TestConnection iDRACs: $iDRACs"
+    Write-Host "Pre-TestConnection iDRAC: $iDRAC"
+    If (Test-Connection -ComputerName $iDRAC -Quiet -Count 1)
+        {
+        Write-Host "test-Connection succeeded" -ForegroundColor Yellow
+        CreateNewiDRACSession $iDRAC $Creds $ResultsPath $ResultsFile
+        ####Need to make "CreatNewiDRACSession" not print twice."
+        $RawProps = Get-PELCAttribute -iDRACSession $iDRACSession | Where-Object {$_.AttributeName -match "Lifecycle Controller State"}
+            If (!$RawProps)
+                {
+                    $AttributeName = "No LifeCycleController Found."
+                    $CurrentValue = "No LifeCycleController Found."
+                    WritePropsToCSV -AttributeName $AttributeName -CurrentValue $CurrentValue
+                }
+            Else
+                {
+                    $AttributeName = $RawProps.AttributeName
+                    $CurrentValue = $RawProps.CurrentValue
+                    WritePropsToCSV -AttributeName $AttributeName -CurrentValue $CurrentValue
+            }
+        }
+    Else
+        {
+        Write-Host "Check-LifeCycle Function foreach, ELSE block running" -ForegroundColor Yellow
+            $AttributeName = "Offline."
+            $CurrentValue = "Offline."
+            WritePropsToCSV -AttributeName $AttributeName -CurrentValue $CurrentValue
+        }
+    }
