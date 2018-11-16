@@ -133,13 +133,13 @@ Foreach ($iDRAC in $iDRACs)
                 {
                     $AttributeName = "No LifeCycleController Found."
                     $CurrentValue = "No LifeCycleController Found."
-                    WritePropsToCSV -AttributeName $AttributeName -CurrentValue $CurrentValue
+                    WritePropsToCSV $AttributeName $CurrentValue
                 }
             Else
                 {
                     $AttributeName = $RawProps.AttributeName
                     $CurrentValue = $RawProps.CurrentValue
-                    WritePropsToCSV -AttributeName $AttributeName -CurrentValue $CurrentValue
+                    WritePropsToCSV $AttributeName  $CurrentValue
                 }
             }
         Catch
@@ -148,7 +148,7 @@ Foreach ($iDRAC in $iDRACs)
             Write-Host "Check-LifeCycle Function foreach, ELSE block running" -ForegroundColor Yellow
             $AttributeName = "$_.Exception.Message"
             $CurrentValue = "Offline."
-            WritePropsToCSV -AttributeName $AttributeName -CurrentValue $CurrentValue
+            WritePropsToCSV $AttributeName $CurrentValue
             }
         ####Need to make "CreatNewiDRACSession" not print twice."
         }
@@ -157,6 +157,6 @@ Foreach ($iDRAC in $iDRACs)
         Write-Host "Check-LifeCycle Function foreach, ELSE block running" -ForegroundColor Yellow
             $AttributeName = "Offline."
             $CurrentValue = "Offline."
-            WritePropsToCSV -AttributeName $AttributeName -CurrentValue $CurrentValue
+            WritePropsToCSV $AttributeName $CurrentValue
         }
     }
