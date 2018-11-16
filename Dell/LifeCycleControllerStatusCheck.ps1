@@ -45,6 +45,8 @@ $ResultsFile = "iDRAC-LifeCycleResults_$CurrentDate.csv"
 #############Conjunction Juncion, what's your Function#############
 Function WritePropsToCSV
     {
+    Param ($iDRAC, $AttributeName, $CurrentValue)
+    Write-Host "Running WritePropsToCSV Function with iDRAC: $iDRAC, AttributeName: $AttributeName, and CurrentValue: $CurrentValue." -ForegroundColor Yellow
         $Props = [ordered]@{
             "IP Address" = $iDRAC;
             "Attribute Name" = "$AttributeName";
@@ -52,25 +54,6 @@ Function WritePropsToCSV
             }#end props
         $PropsObject = New-Object -TypeName PSObject -Property $Props
         $PropsObject| Export-CSV -NoTypeInformation $ResultsPath\$ResultsFile -Append
-    }
-#Likely to be deletedvvvvv
-Function CreateNewiDRACSession
-    {
-#####Create the new iDRAC Session. This must be repeated for every iDRAC in the loop
-    Try
-        {
-        Write-Host "CreateNewiDRACSession running" -ForegroundColor 
-        $iDRACSession = New-PEDRACSession -IPAddress $iDRAC -Credential $Creds -ErrorAction Stop
-            #if $script:iDRACSession ()
-        }
-    Catch
-        {
-        Write-Host "CreateNewiDRACSession Catch block running" -ForegroundColor Yellow
-        Write-Host "Check-LifeCycle Function foreach, ELSE block running" -ForegroundColor Yellow
-        $AttributeName = "$_.Exception.Message"
-        $CurrentValue = "Offline."
-        WritePropsToCSV -AttributeName $AttributeName -CurrentValue $CurrentValue
-        }
     }
 ####################Just Do It####################
 
@@ -85,7 +68,7 @@ $ResultsFile = "iDRAC-LifeCycleResults_$CurrentDate.csv"
     Try
         {
         $iDRACs = Get-Content "$SourcePath\$SourceFile" -ErrorAction Stop;
-        Write-host "$iDRACs"
+        Write-host "Got List of iDRACs"
         }
     catch
         {
@@ -112,11 +95,9 @@ Write-Host "-Creds $Creds -iDRACs $iDRACs -ResultsPath $ResultsPath -ResultsFile
 
 #####The code block that actually does the loop.
 Write-Host "Check-LifeCycle Function has started" -ForegroundColor Yellow
-Write-Host "iDRACs Var is "$iDRACs" - iDRAC Var is "$iDRAC"" -Foreground Yellow
 Foreach ($iDRAC in $iDRACs)
     {
     Write-Host "Check-LifeCycle Function Foreach Block running" -ForegroundColor Yellow
-    Write-Host "Pre-TestConnection iDRACs: $iDRACs"
     Write-Host "Pre-TestConnection iDRAC: $iDRAC"
     If (Test-Connection -ComputerName $iDRAC -Quiet -Count 1)
         {
@@ -124,7 +105,7 @@ Foreach ($iDRAC in $iDRACs)
         #####Create the new iDRAC Session. This must be repeated for every iDRAC in the loop
         Try
             {
-            Write-Host "CreateNewiDRACSession running" -ForegroundColor 
+            Write-Host "CreateNewiDRACSession running" -ForegroundColor Yellow
             $iDRACSession = New-PEDRACSession -IPAddress $iDRAC -Credential $Creds -ErrorAction Stop
             $RawProps = Get-PELCAttribute -iDRACSession $iDRACSession | Where-Object {$_.AttributeName -match "Lifecycle Controller State"}
             #If connection was successful, but attributes we're looking for (Life Cycle Controller State" doesn't exist,
@@ -133,13 +114,13 @@ Foreach ($iDRAC in $iDRACs)
                 {
                     $AttributeName = "No LifeCycleController Found."
                     $CurrentValue = "No LifeCycleController Found."
-                    WritePropsToCSV $AttributeName $CurrentValue
+                    WritePropsToCSV $iDRAC $AttributeName $CurrentValue
                 }
             Else
                 {
                     $AttributeName = $RawProps.AttributeName
                     $CurrentValue = $RawProps.CurrentValue
-                    WritePropsToCSV $AttributeName  $CurrentValue
+                    WritePropsToCSV $iDRAC $AttributeName $CurrentValue
                 }
             }
         Catch
@@ -147,8 +128,8 @@ Foreach ($iDRAC in $iDRACs)
             Write-Host "CreateNewiDRACSession Catch block running" -ForegroundColor Yellow
             Write-Host "Check-LifeCycle Function foreach, ELSE block running" -ForegroundColor Yellow
             $AttributeName = "$_.Exception.Message"
-            $CurrentValue = "Offline."
-            WritePropsToCSV $AttributeName $CurrentValue
+            $CurrentValue = "Bad Creds."
+            WritePropsToCSV $iDRAC $AttributeName $CurrentValue
             }
         ####Need to make "CreatNewiDRACSession" not print twice."
         }
@@ -157,6 +138,6 @@ Foreach ($iDRAC in $iDRACs)
         Write-Host "Check-LifeCycle Function foreach, ELSE block running" -ForegroundColor Yellow
             $AttributeName = "Offline."
             $CurrentValue = "Offline."
-            WritePropsToCSV $AttributeName $CurrentValue
+            WritePropsToCSV $iDRAC $AttributeName $CurrentValue
         }
     }
