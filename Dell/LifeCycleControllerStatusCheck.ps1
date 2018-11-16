@@ -56,6 +56,7 @@ Function WritePropsToCSV
 #Likely to be deletedvvvvv
 Function CreateNewiDRACSession
     {
+#####Create the new iDRAC Session. This must be repeated for every iDRAC in the loop
     Try
         {
         Write-Host "CreateNewiDRACSession running" -ForegroundColor 
@@ -120,9 +121,14 @@ Foreach ($iDRAC in $iDRACs)
     If (Test-Connection -ComputerName $iDRAC -Quiet -Count 1)
         {
         Write-Host "test-Connection succeeded" -ForegroundColor Yellow
-        CreateNewiDRACSession $iDRAC $Creds $ResultsPath $ResultsFile
-        ####Need to make "CreatNewiDRACSession" not print twice."
-        $RawProps = Get-PELCAttribute -iDRACSession $iDRACSession | Where-Object {$_.AttributeName -match "Lifecycle Controller State"}
+        #####Create the new iDRAC Session. This must be repeated for every iDRAC in the loop
+        Try
+            {
+            Write-Host "CreateNewiDRACSession running" -ForegroundColor 
+            $iDRACSession = New-PEDRACSession -IPAddress $iDRAC -Credential $Creds -ErrorAction Stop
+            $RawProps = Get-PELCAttribute -iDRACSession $iDRACSession | Where-Object {$_.AttributeName -match "Lifecycle Controller State"}
+            #If connection was successful, but attributes we're looking for (Life Cycle Controller State" doesn't exist,
+            #Print No LifeCycleController Found (possible with 11G servers or lower)
             If (!$RawProps)
                 {
                     $AttributeName = "No LifeCycleController Found."
@@ -134,7 +140,17 @@ Foreach ($iDRAC in $iDRACs)
                     $AttributeName = $RawProps.AttributeName
                     $CurrentValue = $RawProps.CurrentValue
                     WritePropsToCSV -AttributeName $AttributeName -CurrentValue $CurrentValue
+                }
             }
+        Catch
+            {
+            Write-Host "CreateNewiDRACSession Catch block running" -ForegroundColor Yellow
+            Write-Host "Check-LifeCycle Function foreach, ELSE block running" -ForegroundColor Yellow
+            $AttributeName = "$_.Exception.Message"
+            $CurrentValue = "Offline."
+            WritePropsToCSV -AttributeName $AttributeName -CurrentValue $CurrentValue
+            }
+        ####Need to make "CreatNewiDRACSession" not print twice."
         }
     Else
         {
