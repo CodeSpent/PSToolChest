@@ -12,4 +12,4 @@ Just a repo of all my PowerShell scripts that are either a Work In Progress, or 
   Personally, I have this set up to work with "TheFolderSpy" to watch a specific folder. When the file "DeleteMeWhenReady.txt" is deleted, this script executes. When it's done, it recreates the "trigger" file, which arms TheFolderSpy again. TheFolderSpy can be found: (http://venussoftcorporation.blogspot.com/2010/05/thefolderspy.html)
   
   # Server-LocalAdmin-AddUsersToServers.ps1:
-    This will add multiple users to the local administrators group on multiple servers. I'm working on making this be able to read from a .csv file, but because this script currently works for what I need it to, I've stashed that part away for a rainy day. Feel free to contribute, if you'd like.
+  This will add multiple users to the local administrators group on multiple servers. I'm working on making this be able to read from a .csv file, but because this script currently works for what I need it to, I've stashed that part away for a rainy day. Feel free to contribute, if you'd like.
