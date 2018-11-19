@@ -1,6 +1,10 @@
 # PSToolChest
 PowerShell ToolChest
 Just a repo of all my PowerShell scripts that are either a Work In Progress, or completed.
+# Active Directory Folder:
+# Scripts involving Active Directory (real creative name, right?)
+ ADGroupExport.ps1
+ This script takes a group you want to export into a CSV. This is very handy for auditing purposes.
 
 # Dell Folder:
  # LifeCycleControllerStatusCheck.ps1
