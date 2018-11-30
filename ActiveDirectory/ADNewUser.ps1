@@ -1,5 +1,4 @@
-﻿Write-Host "THIS CURRENTLY ONLY DOES DEV- ACCOUNTS!!!!" -ForegroundColor Green -BackgroundColor Red
-# Gather current Domain information
+﻿# Gather current Domain information
 [String]$Domain = [System.DirectoryServices.ActiveDirectory.Domain]::GetCurrentDomain()
 $DomainName = $Domain -replace'.com',''
 $TLDN = $Domain -replace("$DomainName."),''
@@ -42,4 +41,16 @@ switch ($input)
         }
     }
 # Do the work
+Try{
 New-ADUser -Name $NewUser -SamAccountName $NewUser -UserPrincipalName $UPN -Path $OU -Description "$Type account for $FLName" -AccountPassword(Read-Host -AsSecureString "Type Password for $NewUser") -DisplayName $NewUser -Enabled $True
+}
+Catch{
+    If ($Error.Exception -like '*The operation failed because UPN value provided for addition*is not unique forest-wide*')
+        {
+            Write-Host "$NewUser already exists" -ForegroundColor Red
+        }
+    Else
+        {
+        $Error.Exception
+        }
+    }
