@@ -18,19 +18,22 @@ $UPN = "$NewUser" + "@" + "$Domain"
 # Combine for the parent OUs
 $OUDomain = "$DomainName" + "Users"
 
+# Prompt User for groups
+$Groups = Read-Host "Enter any groups, seperated by coma space. Leave empty if none"
+
 # Prompt User for Type
 $input =Read-Host "What Type of account? Admin-(1), Dev- (2), SRV- (2)"
 switch ($input)
     {
     '1'{
-        $Type = "Admin"
+        $Type = "admin"
         # Create the full OU Path
         $OU = "OU=Administration,OU=$OUDomain,DC=$DomainName,DC=$TLDN"
-        # Add user to CyberArk Group
+        # Add normal account to extra Group
         ######Need to decide how to sanitize
         }
     '2'{
-        $Type = "Dev"
+        $Type = "dev"
         # Create the full OU Path
         $OU = "OU=Administration,OU=$OUDomain,DC=$DomainName,DC=$TLDN"
         }
@@ -47,10 +50,17 @@ New-ADUser -Name $NewUser -SamAccountName $NewUser -UserPrincipalName $UPN -Path
 Catch{
     If ($Error.Exception -like '*The operation failed because UPN value provided for addition*is not unique forest-wide*')
         {
-            Write-Host "$NewUser already exists" -ForegroundColor Red
+        Write-Host "$NewUser already exists" -ForegroundColor Green -BackgroundColor Red
         }
     Else
         {
         $Error.Exception
+        }
+    }
+If ($Groups)
+    {
+    Foreach ($Group in $Groups.Split(", "))
+        {
+        Add-ADGroupMember -Identity $Group -Members $NewUser
         }
     }
