@@ -3,17 +3,8 @@
 $DomainName = $Domain -replace'.com',''
 $TLDN = $Domain -replace("$DomainName."),''
 
-# Prompt User for requester's First/Last name
-$FLName = Read-Host "Requester's First and Last name?"
-
 # Prompt user for the new account Username
-$UserName = Read-Host "Username?"
-
-# Build Account Name
-$NewUser = "$Type-$Username"
-
-# Create the User Principal Name
-$UPN = "$NewUser" + "@" + "$Domain"
+$UserName = Read-Host "Username? (do NOT include prefix (admin-, dev-, or srv-))!"
 
 # Combine for the parent OUs
 $OUDomain = "$DomainName" + "Users"
@@ -27,6 +18,8 @@ switch ($input)
     {
     '1'{
         $Type = "admin"
+        # Prompt User for requester's First/Last name
+        $FLName = Read-Host "Requester's First and Last name?"
         # Create the full OU Path
         $OU = "OU=Administration,OU=$OUDomain,DC=$DomainName,DC=$TLDN"
         $Description = "$Type account for $FLName"
@@ -35,6 +28,8 @@ switch ($input)
         }
     '2'{
         $Type = "dev"
+        # Prompt User for requester's First/Last name
+        $FLName = Read-Host "Requester's First and Last name?"
         # Create the full OU Path
         $OU = "OU=Administration,OU=$OUDomain,DC=$DomainName,DC=$TLDN"
         $Description = "$Type account for $FLName"
@@ -49,9 +44,20 @@ switch ($input)
         $Description = "Purpose: $srvPurpose. OwnerDept: $srvOwnerDept. Owner: $srvOwner"
         }
     }
+# Build Account Name
+If($UserName -notlike "srv-*"){
+    $NewUser = "$Type-$Username"
+}
+Else{
+    $NewUser = $Username
+}
+# Create the User Principal Name
+$UPN = "$NewUser" + "@" + "$Domain"
+
 # Do the work
 Try{
     New-ADUser -Name $NewUser -SamAccountName $NewUser -UserPrincipalName $UPN -Path $OU -Description $Description -AccountPassword(Read-Host -AsSecureString "Type Password for $NewUser") -DisplayName $NewUser -Enabled $True -ErrorAction Stop
+    Write-Host "$NewUser was created successfully" -ForegroundColor Green
 }
 Catch [Microsoft.ActiveDirectory.Management.ADIdentityAlreadyExistsException]
     {
