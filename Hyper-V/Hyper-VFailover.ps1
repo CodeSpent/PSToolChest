@@ -30,7 +30,23 @@ Function WritePropsToCSV {
         $PropsObject| Export-CSV -NoTypeInformation $ResultsFile -Append
     }
 Function FailOverVM {
-
+    Param($RunningVMName, $HyperVHost)
+    # Perform Failover on RunningVMsName
+    Write-Host $RunningVMName | Format-List
+    $HyperVHostRep = Get-VMReplication -ComputerName $HyperVHost -VMName $RunningVMName
+    $HyperVHostRep = $HyperVHostRep.ReplicaServer
+    Stop-VM -ComputerName $HyperVHost -Name $RunningVMName -Force
+    #while(!($RunningVMsName.State -like "Off")) {
+    #    Write-Host "Waiting for Off"
+    #    }
+    Start-VMFailover -Prepare -VMName $RunningVMName -ComputerName $HyperVHostPri -Confirm:$false -ErrorAction Stop
+    Start-VMFailover -VMName $RunningVMName -ComputerName $HyperVHostRep -Confirm:$false -ErrorAction Stop
+    Start-VM -VMName $RunningVMName -ComputerName $HyperVHostRep -ErrorAction Stop
+    Set-VMReplication -Reverse -VMName $RunningVMName -ComputerName $HyperVHostRep -ErrorAction Stop
+    Write-Host "$RunningVMName was successfully failed over"
+    # Write Props to CSV
+    $FailoverStatus = "Success"
+    WritePropsToCSV $HyperVHost $HyperVHostPri $HyperVHostRep $RunningVMName $Repeater $FailoverStatus $Notes
 }
 Foreach ($HyperVHost in $HyperVHosts) {
     $HyperVHostPri = $HyperVHost
@@ -43,51 +59,45 @@ Foreach ($HyperVHost in $HyperVHosts) {
             Try {# RunningVMsName steps
                 $RunningVMs = $VMs | Where-Object {$_.State -like "Running"}
                 $RunningVMsName = $RunningVMs.Name
-                Foreach ($RunningVMName in $RunningVMNames) {
                 If ($RunningVMsName) {
-                    Try {# Perform Failover on RunningVMsName
-                        Write-Host $RunningVMName | Format-List
-                        $HyperVHostRep = Get-VMReplication -ComputerName $HyperVHost -VMName $RunningVMName
-                        $HyperVHostRep = $HyperVHostRep.ReplicaServer
-                        Stop-VM -ComputerName $HyperVHost -Name $RunningVMName -Force
-                        #while(!($RunningVMsName.State -like "Off")) {
-                        #    Write-Host "Waiting for Off"
-                        #    }
-                        Start-VMFailover -Prepare -VMName $RunningVMName -ComputerName $HyperVHostPri -Confirm:$false -ErrorAction Stop
-                        Start-VMFailover -VMName $RunningVMName -ComputerName $HyperVHostRep -Confirm:$false -ErrorAction Stop
-                        Start-VM -VMName $RunningVMName -ComputerName $HyperVHostRep -ErrorAction Stop
-                        Set-VMReplication -Reverse -VMName $RunningVMName -ComputerName $HyperVHostRep -ErrorAction Stop
-                        Write-Host "$RunningVMName was successfully failed over"
-                        # Write Props to CSV
-                        $FailoverStatus = "Success"
-                        WritePropsToCSV $HyperVHost $HyperVHostPri $HyperVHostRep $RunningVMName $Repeater $FailoverStatus $Notes
-                        }
-                    Catch {
-                        # Something in the failover failed.
-                        Write-Host "Something failed while failing over $RunningVMName from $HyperVHost" - -ForegroundColor Yellow
-                        $FailoverStatus = "Something Failed during the failover process of $HyperVHostPri with $RunningVMName."
-                        $Notes = $Error[0].Exception
-                        # Write Props to CSV
-                        WritePropsToCSV $HyperVHost $HyperVHostPri $HyperVHostRep $RunningVMName $Repeater $FailoverStatus $Notes
+                    Foreach ($RunningVMName in $RunningVMNames) {
+                        Try {
+                            FailOverVM $RunningVMName $HyperVHost
+                            }
+                        Catch {
+                            # Something in the failover failed.
+                            Write-Host "Something failed while failing over $RunningVMName from $HyperVHost" - -ForegroundColor Yellow
+                            $FailoverStatus = "Something Failed during the failover process of $HyperVHostPri with $RunningVMName."
+                            $Notes = $Error[0].Exception
+                            # Write Props to CSV
+                            WritePropsToCSV $HyperVHost $HyperVHostPri $HyperVHostRep $RunningVMName $Repeater $FailoverStatus $Notes
+                            }
                         }
                     }
+                else {
+                    Write-Host "$RunningVMsName Is null for $HyperVHost"
+                    $FailoverStatus = "$HyperVHost has no VMs running"
+                    $Notes = "$Error[0]"
+                }
                 }
             Catch {
                 Write-Host "Something failed while getting $PrRunningVMsName from $HyperVHost"
                 $FailoverStatus = "Couldn't get $RunningVMName from $HyperVHost"
                 $Notes = "$Error[0]"
+                WritePropsToCSV $HyperVHost $HyperVHostPri $HyperVHostRep $RunningVMName $Repeater $FailoverStatus $Notes
                 }
             }
         Catch{
             Write-Host "Couldn't get VM List from $HyperVHost."
             $FailoverStatus = "Failed to retrieve VM list from $HyperVHost"
             $Notes = "$Error[0]"
-            WritePropsToCSV $HyperVHost $HyperVHostPri $HyperVHostRep $RunningVMName $Repeater $FailoverStatus
+            WritePropsToCSV $HyperVHost $HyperVHostPri $HyperVHostRep $RunningVMName $Repeater $FailoverStatus $Notes
             }
-    }
     Else{
         Write-Host "Test-Connection failed"
         $FailoverStatus = "Test-Connection failed. Offline"
-        WritePropsToCSV $HyperVHost $HyperVHostPri $HyperVHostRep $RunningVMName $Repeater $FailoverStatus       
+        $Notes = "$Error[0]"
+        WritePropsToCSV $HyperVHost $HyperVHostPri $HyperVHostRep $RunningVMName $Repeater $FailoverStatus $Notes      
         }
     }
+}
