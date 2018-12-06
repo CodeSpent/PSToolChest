@@ -1,4 +1,5 @@
-﻿# Gather current Domain information
+﻿$VerbosePreference = 'Continue'
+# Gather current Domain information
 [String]$Domain = [System.DirectoryServices.ActiveDirectory.Domain]::GetCurrentDomain()
 $DomainName = $Domain -replace'.com',''
 $TLDN = $Domain -replace("$DomainName."),''
@@ -15,6 +16,14 @@ $OUDomain = "$DomainName" + "Users"
 # Prompt User for groups
 $Groups = Read-Host "Enter any groups, seperated by coma space. Leave empty if none"
 
+Function Get-Requester {
+    Param($UserName)
+    $Requester = Get-ADuser $UserName
+    $RequesterFirst = $Requester.GivenName
+    $RequesterLast = $Requester.SurName
+    $RequesterFull = "$RequesterFirst" + " " + "$RequesterLast"
+    Return $RequesterFull
+}
 # Prompt User for Type
 $input =Read-Host "What Type of account? Admin-(1), Dev- (2), SRV- (3)"
 switch ($input)
@@ -22,10 +31,10 @@ switch ($input)
     '1'{
         $Type = "admin"
         # Prompt User for requester's First/Last name
-        $FLName = Read-Host "Requester's First and Last name?"
         # Create the full OU Path
+        Get-Requester $UserName
         $OU = "OU=Administration,OU=$OUDomain,DC=$DomainName,DC=$TLDN"
-        $Description = "$Type account for $FLName"
+        $Description = "$Type account for $RequesterFull"
         $PWNeverExpire = $False
         # Add normal account to extra Group
         ######Need to decide how to sanitize
@@ -33,10 +42,10 @@ switch ($input)
     '2'{
         $Type = "dev"
         # Prompt User for requester's First/Last name
-        $FLName = Read-Host "Requester's First and Last name?"
         # Create the full OU Path
+        Get-Requester $UserName
         $OU = "OU=Administration,OU=$OUDomain,DC=$DomainName,DC=$TLDN"
-        $Description = "$Type account for $FLName"
+        $Description = "$Type account for $RequesterFull"
         $PWNeverExpire = $False
         }
     '3'{
@@ -62,7 +71,9 @@ Else{
 $UPN = "$NewUser" + "@" + "$Domain"
 
 # Trim the $NewUser to 20 chars, because the SamAccountName cannot be more than 20
-$SAM = $NewUser.Substring(0,20)
+If($NewUser.Length -gt 20) {
+$SAM = $NewUser.Substring(0, 20)
+}
 
 # Do the work
 Try{
@@ -84,10 +95,15 @@ Catch{
         }
     }
 If ($Groups)
-    {
+    {Write-Verbose "Root If: $Groups"
     Foreach ($Group in $Groups.Split(", "))
-        {
-        Add-ADGroupMember -Identity "$Group" -Members $NewUser
-        Write-Host "Added $NewUser to $Group"
+        {Write-Verbose "Foreach: $Groups"
+        Try {Write-Verbose "Try: $Groups"
+            Add-ADGroupMember -Identity $Group -Members $NewUser
+            Write-Host "Added $NewUser to $Group"
+            }
+        Catch [Microsoft.ActiveDirectory.Management.ADIdentityNotFoundException] {
+            Write-Host "AD Group $Group doesn't exist. Check spelling and add manually" -ForegroundColor Yellow
+            }
         }
     }
