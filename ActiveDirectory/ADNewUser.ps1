@@ -5,6 +5,8 @@ $TLDN = $Domain -replace("$DomainName."),''
 
 # Prompt user for the new account Username
 $UserName = Read-Host "Username? (do NOT include prefix (admin-, dev-, or srv-))!"
+#Remove leading/trailing Spaces
+$UserName = $UserName.Trim()
 
 # Combine for the parent OUs
 $OUDomain = "$DomainName" + "Users"
@@ -56,7 +58,11 @@ Else{
 }
 # Create the User Principal Name
 $UPN = "$NewUser" + "@" + "$Domain"
-$SAM = $NewUser.Trim()
+# Trim the $NewUser to 20 chars, because the SamAccountName cannot be more than 20
+$SAMLength = $NewUser.Length
+$SAMTrim = $SAMLength - 20
+$SAM = $NewUser -replace ".{$SAMTrim}$"
+
 # Do the work
 Try{
     New-ADUser -Name $NewUser -SamAccountName $NewUser -UserPrincipalName $UPN -Path $OU -Description $Description -AccountPassword(Read-Host -AsSecureString "Type Password for $NewUser") -PasswordNeverExpires:$PWNeverExpire -DisplayName $NewUser -Enabled $True -ErrorAction Stop
