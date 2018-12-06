@@ -1,4 +1,5 @@
-﻿# Gather current Domain information
+﻿$VerbosePreference = 'Continue'
+# Gather current Domain information
 [String]$Domain = [System.DirectoryServices.ActiveDirectory.Domain]::GetCurrentDomain()
 $DomainName = $Domain -replace'.com',''
 $TLDN = $Domain -replace("$DomainName."),''
@@ -94,10 +95,15 @@ Catch{
         }
     }
 If ($Groups)
-    {
+    {Write-Verbose "Root If: $Groups"
     Foreach ($Group in $Groups.Split(", "))
-        {
-        Add-ADGroupMember -Identity "$Group" -Members $NewUser
-        Write-Host "Added $NewUser to $Group"
+        {Write-Verbose "Foreach: $Groups"
+        Try {Write-Verbose "Try: $Groups"
+            Add-ADGroupMember -Identity $Group -Members $NewUser
+            Write-Host "Added $NewUser to $Group"
+            }
+        Catch [Microsoft.ActiveDirectory.Management.ADIdentityNotFoundException] {
+            Write-Host "AD Group $Group doesn't exist. Check spelling and add manually" -ForegroundColor Yellow
+            }
         }
     }
