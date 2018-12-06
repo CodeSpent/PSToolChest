@@ -5,6 +5,7 @@ $TLDN = $Domain -replace("$DomainName."),''
 
 # Prompt user for the new account Username
 $UserName = Read-Host "Username? (do NOT include prefix (admin-, dev-, or srv-))!"
+
 #Remove leading/trailing Spaces
 $UserName = $UserName.Trim()
 
@@ -56,12 +57,12 @@ If($UserName -notlike "srv-*"){
 Else{
     $NewUser = $Username
 }
+
 # Create the User Principal Name
 $UPN = "$NewUser" + "@" + "$Domain"
+
 # Trim the $NewUser to 20 chars, because the SamAccountName cannot be more than 20
-$SAMLength = $NewUser.Length
-$SAMTrim = $SAMLength - 20
-$SAM = $NewUser -replace ".{$SAMTrim}$"
+$SAM = $NewUser.Substring(0,20)
 
 # Do the work
 Try{
