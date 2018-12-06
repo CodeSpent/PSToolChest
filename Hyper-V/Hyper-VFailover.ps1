@@ -3,7 +3,7 @@ $VerbosePreference
 $WorkingDir = "D:\Scripts"
 $SourceFile = "$WorkingDir\SourceFiles\Hyper-V_Failover.txt"
 $ResultsDir = "$WorkingDir\Results\"
-#Read-Host "This will read from $SourceFile. Press ENTER when ready"
+Read-Host "This will read from $SourceFile. Press ENTER when ready"
 # Get the list of Hosts we want to use
 Try
     {
