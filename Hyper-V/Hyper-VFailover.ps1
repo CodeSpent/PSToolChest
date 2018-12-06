@@ -42,8 +42,8 @@ Function FailOverVM {
     #    }
     Start-VMFailover -Prepare -VMName $RunningVMName -ComputerName $HyperVHostPri -Confirm:$false -ErrorAction Stop
     Start-VMFailover -VMName $RunningVMName -ComputerName $HyperVHostRep -Confirm:$false -ErrorAction Stop
-    Start-VM -VMName $RunningVMName -ComputerName $HyperVHostRep -ErrorAction Stop
     Set-VMReplication -Reverse -VMName $RunningVMName -ComputerName $HyperVHostRep -ErrorAction Stop
+    Start-VM -VMName $RunningVMName -ComputerName $HyperVHostRep -ErrorAction Stop
     Write-Host "$RunningVMName was successfully failed over"
     # Write Props to CSV
     $FailoverStatus = "Success"
