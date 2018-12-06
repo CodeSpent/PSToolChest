@@ -23,6 +23,7 @@ switch ($input)
         # Create the full OU Path
         $OU = "OU=Administration,OU=$OUDomain,DC=$DomainName,DC=$TLDN"
         $Description = "$Type account for $FLName"
+        $PWNeverExpire = $False
         # Add normal account to extra Group
         ######Need to decide how to sanitize
         }
@@ -33,6 +34,7 @@ switch ($input)
         # Create the full OU Path
         $OU = "OU=Administration,OU=$OUDomain,DC=$DomainName,DC=$TLDN"
         $Description = "$Type account for $FLName"
+        $PWNeverExpire = $False
         }
     '3'{
         $Type = "srv"
@@ -42,6 +44,7 @@ switch ($input)
         $srvOwnerDept = Read-host "What is the Owner Department?"
         $srvPurpose = Read-Host "What is the Purpose?"
         $Description = "Purpose: $srvPurpose. OwnerDept: $srvOwnerDept. Owner: $srvOwner"
+        $PWNeverExpire = $True
         }
     }
 # Build Account Name
@@ -53,10 +56,10 @@ Else{
 }
 # Create the User Principal Name
 $UPN = "$NewUser" + "@" + "$Domain"
-
+$SAM = $NewUser.Trim()
 # Do the work
 Try{
-    New-ADUser -Name $NewUser -SamAccountName $NewUser -UserPrincipalName $UPN -Path $OU -Description $Description -AccountPassword(Read-Host -AsSecureString "Type Password for $NewUser") -DisplayName $NewUser -Enabled $True -ErrorAction Stop
+    New-ADUser -Name $NewUser -SamAccountName $NewUser -UserPrincipalName $UPN -Path $OU -Description $Description -AccountPassword(Read-Host -AsSecureString "Type Password for $NewUser") -PasswordNeverExpires:$PWNeverExpire -DisplayName $NewUser -Enabled $True -ErrorAction Stop
     Write-Host "$NewUser was created successfully" -ForegroundColor Green
 }
 Catch [Microsoft.ActiveDirectory.Management.ADIdentityAlreadyExistsException]
@@ -70,14 +73,14 @@ Catch{
         }
     Else
         {
-        $Error.Exception
+        $Error[0].Exception
         }
     }
 If ($Groups)
     {
     Foreach ($Group in $Groups.Split(", "))
         {
-        Add-ADGroupMember -Identity $Group -Members $NewUser
+        Add-ADGroupMember -Identity "$Group" -Members $NewUser
         Write-Host "Added $NewUser to $Group"
         }
     }
