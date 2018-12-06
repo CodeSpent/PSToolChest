@@ -65,7 +65,7 @@ $SAM = $NewUser -replace ".{$SAMTrim}$"
 
 # Do the work
 Try{
-    New-ADUser -Name $NewUser -SamAccountName $NewUser -UserPrincipalName $UPN -Path $OU -Description $Description -AccountPassword(Read-Host -AsSecureString "Type Password for $NewUser") -PasswordNeverExpires:$PWNeverExpire -DisplayName $NewUser -Enabled $True -ErrorAction Stop
+    New-ADUser -Name $NewUser -SamAccountName $SAM -UserPrincipalName $UPN -Path $OU -Description $Description -AccountPassword(Read-Host -AsSecureString "Type Password for $NewUser") -PasswordNeverExpires:$PWNeverExpire -DisplayName $NewUser -Enabled $True -ErrorAction Stop
     Write-Host "$NewUser was created successfully" -ForegroundColor Green
 }
 Catch [Microsoft.ActiveDirectory.Management.ADIdentityAlreadyExistsException]
