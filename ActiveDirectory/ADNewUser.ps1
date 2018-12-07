@@ -22,38 +22,49 @@ do {
 until ($input -eq '')
 Write-Verbose "$count groups added"
 
+Function Get-Requester {
+    Param(
+    [string]$UserName
+    )
+    $Requester = Get-ADuser $UserName
+    $RequesterFirst = $Requester.GivenName
+    $RequesterLast = $Requester.SurName
+    $RequesterFull = "$RequesterFirst" + " " + "$RequesterLast"
+    Return $RequesterFull
+}
+
 # Prompt User for Type
 $input =Read-Host "What Type of account? Admin-(1), Dev- (2), SRV- (3)"
+$PasswordExpiresNever = $False # Default to false unless an SRV account
 switch ($input)
     {
     '1'{
-        $Type = "admin"
-        # Prompt User for requester's First/Last name
-        $FLName = Read-Host "Requester's First and Last name?"
-        # Create the full OU Path
-        $OU = "OU=Administration,OU=$OUDomain,DC=$DomainName,DC=$TLDN"
-        $Description = "$Type account for $FLName"
-        # Add normal account to extra Group
-        ######Need to decide how to sanitize
+        $Type = 'admin'
         }
     '2'{
         $Type = "dev"
-        # Prompt User for requester's First/Last name
-        $FLName = Read-Host "Requester's First and Last name?"
-        # Create the full OU Path
-        $OU = "OU=Administration,OU=$OUDomain,DC=$DomainName,DC=$TLDN"
-        $Description = "$Type account for $FLName"
+        
         }
     '3'{
         $Type = "srv"
-        # Create the full OU Path
-        $OU = "OU=Service Accounts,OU=EnterpriseGroups,DC=$DomainName,DC=$TLDN"
+        }
+    }
+
+    Write-Verbose "Creating a $Type account"
+    if($Type -eq 'srv') {
+        $PWNeverExpire = $True
         $srvOwner = Read-Host "What is the Owner name?"
         $srvOwnerDept = Read-host "What is the Owner Department?"
         $srvPurpose = Read-Host "What is the Purpose?"
         $Description = "Purpose: $srvPurpose. OwnerDept: $srvOwnerDept. Owner: $srvOwner"
-        }
     }
+    else {
+     Get-Requester -UserName $UserName
+     $OU = "OU=Administration,OU=$OUDomain,DC=$DomainName,DC=$TLDN"
+     $Description = "$Type account for $RequesterFull"
+     $PWNeverExpire = $False
+     }
+
 # Build Account Name
 If($UserName -notlike "srv-*"){
     $NewUser = "$Type-$Username"
