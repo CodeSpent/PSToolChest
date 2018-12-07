@@ -27,18 +27,10 @@ until ($input -eq '')
 Write-Verbose "$count groups added"
 
 Function Get-Requester {
+
     Param(
     [string]$UserName
     )
-    $Requester = Get-ADuser $UserName
-    $RequesterFirst = $Requester.GivenName
-    $RequesterLast = $Requester.SurName
-    $RequesterFull = "$RequesterFirst" + " " + "$RequesterLast"
-    Return $RequesterFull
-}
-
-Function Get-Requester {
-    Param($UserName)
     $Requester = Get-ADuser $UserName
     $RequesterFirst = $Requester.GivenName
     $RequesterLast = $Requester.SurName
@@ -51,6 +43,7 @@ $PasswordExpiresNever = $False # Default to false unless an SRV account
 switch ($input)
     {
     '1'{
+
         $Type = 'admin'
         }
     '2'{
@@ -68,6 +61,8 @@ switch ($input)
         $srvOwnerDept = Read-host "What is the Owner Department?"
         $srvPurpose = Read-Host "What is the Purpose?"
         $Description = "Purpose: $srvPurpose. OwnerDept: $srvOwnerDept. Owner: $srvOwner"
+        $PWNeverExpire = $True
+        }
     }
     else {
      Get-Requester -UserName $UserName
@@ -112,9 +107,9 @@ Catch{
         }
     }
 If ($Groups)
-    {Write-Verbose "Root If: $Groups"
-    Foreach ($Group in $Groups.Split(", "))
-        {Write-Verbose "Foreach: $Groups"
+    {
+    Foreach ($Group in $Groups)
+        {
         Try {Write-Verbose "Try: $Groups"
             Add-ADGroupMember -Identity $Group -Members $NewUser
             Write-Host "Added $NewUser to $Group"
