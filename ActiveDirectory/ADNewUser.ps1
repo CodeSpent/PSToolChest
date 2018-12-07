@@ -10,7 +10,17 @@ $UserName = Read-Host "Username? (do NOT include prefix (admin-, dev-, or srv-))
 $OUDomain = "$DomainName" + "Users"
 
 # Prompt User for groups
-$Groups = Read-Host "Enter any groups, seperated by coma space. Leave empty if none"
+$Groups = @() # Create a blank array for groups
+$groupNum = 1 # Start the group count at 1
+
+Write-Host "Please enter group names (must be 1 or more)"
+do {
+ $count = $groupNum++
+ $input = (Read-Host "Group $count Name")
+ if ($input -ne '') {$Groups += $input}
+}
+until ($input -eq '')
+Write-Verbose "$count groups added"
 
 # Prompt User for Type
 $input =Read-Host "What Type of account? Admin-(1), Dev- (2), SRV- (3)"
@@ -75,7 +85,7 @@ Catch{
     }
 If ($Groups)
     {
-    Foreach ($Group in $Groups.Split(", "))
+    Foreach ($Group in $Groups)
         {
         Add-ADGroupMember -Identity $Group -Members $NewUser
         Write-Host "Added $NewUser to $Group"
