@@ -1,10 +1,14 @@
-﻿# Gather current Domain information
+﻿$VerbosePreference = 'Continue'
+# Gather current Domain information
 [String]$Domain = [System.DirectoryServices.ActiveDirectory.Domain]::GetCurrentDomain()
 $DomainName = $Domain -replace'.com',''
 $TLDN = $Domain -replace("$DomainName."),''
 
 # Prompt user for the new account Username
 $UserName = Read-Host "Username? (do NOT include prefix (admin-, dev-, or srv-))!"
+
+#Remove leading/trailing Spaces
+$UserName = $UserName.Trim()
 
 # Combine for the parent OUs
 $OUDomain = "$DomainName" + "Users"
@@ -22,6 +26,14 @@ do {
 until ($input -eq '')
 Write-Verbose "$count groups added"
 
+Function Get-Requester {
+    Param($UserName)
+    $Requester = Get-ADuser $UserName
+    $RequesterFirst = $Requester.GivenName
+    $RequesterLast = $Requester.SurName
+    $RequesterFull = "$RequesterFirst" + " " + "$RequesterLast"
+    Return $RequesterFull
+}
 # Prompt User for Type
 $input =Read-Host "What Type of account? Admin-(1), Dev- (2), SRV- (3)"
 switch ($input)
@@ -29,20 +41,22 @@ switch ($input)
     '1'{
         $Type = "admin"
         # Prompt User for requester's First/Last name
-        $FLName = Read-Host "Requester's First and Last name?"
         # Create the full OU Path
+        Get-Requester $UserName
         $OU = "OU=Administration,OU=$OUDomain,DC=$DomainName,DC=$TLDN"
-        $Description = "$Type account for $FLName"
+        $Description = "$Type account for $RequesterFull"
+        $PWNeverExpire = $False
         # Add normal account to extra Group
         ######Need to decide how to sanitize
         }
     '2'{
         $Type = "dev"
         # Prompt User for requester's First/Last name
-        $FLName = Read-Host "Requester's First and Last name?"
         # Create the full OU Path
+        Get-Requester $UserName
         $OU = "OU=Administration,OU=$OUDomain,DC=$DomainName,DC=$TLDN"
-        $Description = "$Type account for $FLName"
+        $Description = "$Type account for $RequesterFull"
+        $PWNeverExpire = $False
         }
     '3'{
         $Type = "srv"
@@ -52,6 +66,7 @@ switch ($input)
         $srvOwnerDept = Read-host "What is the Owner Department?"
         $srvPurpose = Read-Host "What is the Purpose?"
         $Description = "Purpose: $srvPurpose. OwnerDept: $srvOwnerDept. Owner: $srvOwner"
+        $PWNeverExpire = $True
         }
     }
 # Build Account Name
@@ -61,12 +76,18 @@ If($UserName -notlike "srv-*"){
 Else{
     $NewUser = $Username
 }
+
 # Create the User Principal Name
 $UPN = "$NewUser" + "@" + "$Domain"
 
+# Trim the $NewUser to 20 chars, because the SamAccountName cannot be more than 20
+If($NewUser.Length -gt 20) {
+$SAM = $NewUser.Substring(0, 20)
+}
+
 # Do the work
 Try{
-    New-ADUser -Name $NewUser -SamAccountName $NewUser -UserPrincipalName $UPN -Path $OU -Description $Description -AccountPassword(Read-Host -AsSecureString "Type Password for $NewUser") -DisplayName $NewUser -Enabled $True -ErrorAction Stop
+    New-ADUser -Name $NewUser -SamAccountName $SAM -UserPrincipalName $UPN -Path $OU -Description $Description -AccountPassword(Read-Host -AsSecureString "Type Password for $NewUser") -PasswordNeverExpires:$PWNeverExpire -DisplayName $NewUser -Enabled $True -ErrorAction Stop
     Write-Host "$NewUser was created successfully" -ForegroundColor Green
 }
 Catch [Microsoft.ActiveDirectory.Management.ADIdentityAlreadyExistsException]
@@ -80,14 +101,19 @@ Catch{
         }
     Else
         {
-        $Error.Exception
+        $Error[0].Exception
         }
     }
 If ($Groups)
     {
     Foreach ($Group in $Groups)
         {
-        Add-ADGroupMember -Identity $Group -Members $NewUser
-        Write-Host "Added $NewUser to $Group"
+        Try {Write-Verbose "Try: $Groups"
+            Add-ADGroupMember -Identity $Group -Members $NewUser
+            Write-Host "Added $NewUser to $Group"
+            }
+        Catch [Microsoft.ActiveDirectory.Management.ADIdentityNotFoundException] {
+            Write-Host "AD Group $Group doesn't exist. Check spelling and add manually" -ForegroundColor Yellow
+            }
         }
     }
